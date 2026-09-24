@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KLASA i URBROJ</title>
+<meta name="description" content="Generator klasifikacijskih oznaka (KLASA) i urudžbenih brojeva (URBROJ) po vlastitom predlošku, s evidencijom predmeta i izvozom u Excel. Podaci ostaju u tvom pregledniku.">
+<link rel="icon" href="zajednicko/logo.svg">
+<link rel="stylesheet" href="zajednicko/app-bonic.css">
+<style>
+  body:not(.postojeci) .samo-postojeci, body.postojeci .samo-novi { display: none !important; }
+  .rezultat { font: 600 16px/1.7 ui-monospace, "Cascadia Mono", Consolas, monospace; background: var(--polje); border: 1px solid var(--crta); border-radius: 12px; padding: 14px 16px; white-space: pre-wrap; }
+  .rezultat.novi { border-color: var(--ok); background: var(--ok-meko); }
+  .rezultat small { font: 12px system-ui, sans-serif; color: var(--blijedo); display: block; margin-bottom: 4px; }
+  .oznake { font-size: 12.5px; color: var(--blijedo); line-height: 1.7; }
+  .oznake code { background: var(--polje); border: 1px solid var(--crta); border-radius: 5px; padding: 0 5px; font-size: 12px; color: var(--tekst); }
+  details.postavke-tijela summary { cursor: pointer; font-weight: 650; font-size: 16px; }
+  .evidencija-glava { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .evidencija-glava input { max-width: 260px; }
+  .tablica td.mono { font-size: 13px; }
+  .tablica td.tekst { white-space: normal; min-width: 200px; }
+</style>
+</head>
+<body data-alat="urudzbeni-broj">
+<header class="ab-vrh"></header>
+
+<main class="ab-omot">
+  <section class="ab-uvod">
+    <span class="ab-ikona"><span data-ik="pecat"></span></span>
+    <div>
+      <h1>KLASA i URBROJ</h1>
+      <p>Dodjeljuje klasifikacijske oznake i urudžbene brojeve po tvom predlošku i vodi evidenciju predmeta — redni brojevi se sami povećavaju. Prilagodi predložak planu klasifikacijskih oznaka svoje ustanove i Uredbi o uredskom poslovanju (NN 75/21).</p>
+    </div>
+  </section>
+
+  <div class="stupci">
+    <div class="slog">
+      <section class="kartica">
+        <div class="seg" role="radiogroup" aria-label="Vrsta" style="margin-bottom:14px">
+          <label><input type="radio" name="vrsta" value="novi" checked><span>Novi predmet</span></label>
+          <label><input type="radio" name="vrsta" value="postojeci"><span>Novo pismeno u postojećem predmetu</span></label>
+        </div>
+        <div class="forma">
+          <div class="polje samo-novi"><label for="sadrzaj">Oznaka sadržaja</label><input id="sadrzaj" class="mono" list="sadrzaji" placeholder="008-01"><datalist id="sadrzaji"></datalist></div>
+          <div class="polje samo-novi"><label for="dosje">Oznaka dosjea</label><input id="dosje" class="mono" value="01"></div>
+          <div class="polje samo-novi"><label for="godina">Godina predmeta</label><input id="godina" type="number" min="1990" max="2100"></div>
+          <div class="polje puno samo-postojeci"><label for="predmetKlasa">Predmet (KLASA)</label><select id="predmetKlasa"></select></div>
+          <div class="polje puno"><label for="naziv">Naziv / sadržaj pismena</label><input id="naziv" placeholder="Zahtjev za pristup informacijama"></div>
+          <div class="polje"><label for="stranka">Pošiljatelj / primatelj</label><input id="stranka"></div>
+          <div class="polje"><label for="datum">Datum</label><input id="datum" type="date"></div>
+        </div>
+        <div class="rezultat" id="pregled" style="margin-top:14px"></div>
+        <div class="gumbi" style="margin-top:12px">
+          <button type="button" class="gumb glavni veliki" id="dodijeli"><span data-ik="plus"></span>Dodijeli broj</button>
+          <button type="button" class="gumb" id="kopiraj"><span data-ik="kopiraj"></span>Kopiraj</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="slog">
+      <section class="kartica">
+        <details class="postavke-tijela" id="postavkeTijela">
+          <summary>Postavke ustanove i predložak</summary>
+          <div class="forma" style="margin-top:14px">
+            <div class="polje"><label for="stvaratelj">Brojčana oznaka stvaratelja</label><input id="stvaratelj" class="mono" data-p="stvaratelj"></div>
+            <div class="polje"><label for="jedinica">Oznaka ustrojstvene jedinice</label><input id="jedinica" class="mono" data-p="jedinica"></div>
+            <div class="polje puno"><label for="mjesto">Mjesto (za potpis datuma)</label><input id="mjesto" data-p="mjesto"></div>
+            <div class="polje puno"><label for="pKlasa">Predložak KLASE</label><input id="pKlasa" class="mono" data-p="pKlasa"></div>
+            <div class="polje puno"><label for="pUrbroj">Predložak URBROJA</label><input id="pUrbroj" class="mono" data-p="pUrbroj"></div>
+          </div>
+          <p class="oznake" style="margin-top:10px">
+            <code>{sadrzaj}</code> oznaka sadržaja · <code>{dosje}</code> oznaka dosjea · <code>{rbr}</code> redni broj predmeta (<code>{rbr:2}</code> = 01) ·
+            <code>{GG}</code> / <code>{GGGG}</code> godina · <code>{stvaratelj}</code> · <code>{jedinica}</code> · <code>{pismeno}</code> redni broj pismena u predmetu (<code>{pismeno:2}</code> = 01) ·
+            <code>{MM}</code> mjesec. U KLASI je godina ona u kojoj je predmet otvoren, u URBROJU godina nastanka pismena.
+          </p>
+          <button type="button" class="gumb tekstualni" id="zadanoPredlozak" style="margin-top:6px">Vrati primjer predloška</button>
+        </details>
+      </section>
+
+      <section class="kartica">
+        <div class="evidencija-glava">
+          <h2 style="margin:0">Evidencija <span class="pilula" id="broj">0</span></h2>
+          <input type="search" id="trazi" placeholder="Traži…" aria-label="Traži u evidenciji">
+        </div>
+        <div class="tablica-omot"><table class="tablica"><thead><tr><th>Datum</th><th>KLASA</th><th>URBROJ</th><th>Naziv</th><th>Stranka</th></tr></thead><tbody id="tijelo"></tbody></table></div>
+        <div class="gumbi" style="margin-top:12px">
+          <button type="button" class="gumb" id="csv"><span data-ik="preuzmi"></span>Excel (CSV)</button>
+          <button type="button" class="gumb" id="kopija"><span data-ik="preuzmi"></span>Sigurnosna kopija</button>
+          <button type="button" class="gumb" id="vrati"><span data-ik="upload"></span>Učitaj kopiju</button>
+          <button type="button" class="gumb tekstualni opasno" id="ponisti">Poništi zadnji unos</button>
+        </div>
+        <p class="napomena" style="margin-top:10px">Evidencija se sprema samo u ovaj preglednik na ovom računalu. Redovito preuzmi sigurnosnu kopiju — brisanjem podataka preglednika evidencija se gubi. Ovo je pomoćni alat, a ne zamjena za službeni urudžbeni zapisnik.</p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="ab-dno"></footer>
+<script src="zajednicko/app-bonic.js"></script>
+<script>
+'use strict';
+const { $, $$, esc, obavijest, spremi, kopiraj, lokalno } = AB;
+const KLJUC = 'urudzbeni-broj';
+const PRIMJER = { stvaratelj: '2198-1', jedinica: '01', mjesto: '', pKlasa: '{sadrzaj}/{GG}-{dosje}/{rbr:2}', pUrbroj: '{stvaratelj}-{jedinica}-{GG}-{pismeno}' };
+let P = { ...PRIMJER, ...lokalno.uzmi(KLJUC + '-postavke', {}) };
+let E = lokalno.uzmi(KLJUC, []);   // { datum, klasa, urbroj, sadrzaj, dosje, god, rbr, pismeno, naziv, stranka }
+
+const danas = () => new Date().toISOString().slice(0, 10);
+$('#godina').value = new Date().getFullYear();
+$('#datum').value = danas();
+$$('[data-p]').forEach(el => { el.value = P[el.dataset.p] ?? ''; });
+if (!lokalno.uzmi(KLJUC + '-postavke')) $('#postavkeTijela').open = true;
+
+function popuni(predlozak, v) {
+  return predlozak.replace(/\{(\w+)(?::(\d+))?\}/g, (m, k, n) => {
+    const x = v[k];
+    if (x === undefined) return m;
+    return n ? String(x).padStart(+n, '0') : String(x);
+  });
+}
+const vrijednosti = (o, datumAkta) => {
+  const d = new Date(datumAkta || danas());
+  return { sadrzaj: o.sadrzaj, dosje: o.dosje, rbr: o.rbr, stvaratelj: P.stvaratelj, jedinica: P.jedinica, pismeno: o.pismeno, MM: String(d.getMonth() + 1).padStart(2, '0'), DD: String(d.getDate()).padStart(2, '0') };
+};
+function klasa(o) { const g = +o.god; return popuni(P.pKlasa, { ...vrijednosti(o), GG: String(g % 100).padStart(2, '0'), GGGG: g }); }
+function urbroj(o, datumAkta) { const g = new Date(datumAkta || danas()).getFullYear(); return popuni(P.pUrbroj, { ...vrijednosti(o, datumAkta), GG: String(g % 100).padStart(2, '0'), GGGG: g }); }
+
+function sljedeci() {
+  const datum = $('#datum').value || danas();
+  if (document.body.classList.contains('postojeci')) {
+    const k = $('#predmetKlasa').value;
+    const u = E.filter(x => x.klasa === k);
+    if (!u.length) return null;
+    const baza = u[0];
+    const o = { ...baza, pismeno: Math.max(...u.map(x => x.pismeno)) + 1 };
+    return { ...o, klasa: k, urbroj: urbroj(o, datum), datum };
+  }
+  const sadrzaj = $('#sadrzaj').value.trim(), dosje = $('#dosje').value.trim(), god = +$('#godina').value;
+  if (!sadrzaj || !god) return null;
+  const isti = E.filter(x => x.sadrzaj === sadrzaj && x.dosje === dosje && +x.god === god);
+  const o = { sadrzaj, dosje, god, rbr: isti.length ? Math.max(...isti.map(x => x.rbr)) + 1 : 1, pismeno: 1 };
+  return { ...o, klasa: klasa(o), urbroj: urbroj(o, datum), datum };
+}
+const blok = o => `KLASA: ${o.klasa}\nURBROJ: ${o.urbroj}` + (P.mjesto ? `\n${P.mjesto}, ${new Date(o.datum).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}` : '');
+
+let zadnjiDodijeljen = null;
+function prikazi() {
+  const o = sljedeci();
+  const el = $('#pregled');
+  el.classList.remove('novi');
+  el.innerHTML = o ? `<small>Sljedeći broj (još nije dodijeljen)</small>${esc(blok(o))}` : '<small>Upiši oznaku sadržaja i godinu.</small>';
+  $('#dodijeli').disabled = !o;
+}
+function popisPredmeta() {
+  const klase = [...new Map(E.map(x => [x.klasa, x])).values()].reverse();
+  const prije = $('#predmetKlasa').value;
+  $('#predmetKlasa').innerHTML = klase.length ? klase.map(x => `<option value="${esc(x.klasa)}">${esc(x.klasa)} — ${esc(x.naziv || '')}</option>`).join('') : '<option value="">Još nema predmeta</option>';
+  if (prije && klase.some(x => x.klasa === prije)) $('#predmetKlasa').value = prije;
+  $('#sadrzaji').innerHTML = [...new Set(E.map(x => x.sadrzaj))].map(s => `<option value="${esc(s)}">`).join('');
+}
+function tablica() {
+  const q = $('#trazi').value.trim().toLowerCase();
+  const red = E.filter(x => !q || [x.klasa, x.urbroj, x.naziv, x.stranka].join(' ').toLowerCase().includes(q)).slice().reverse();
+  $('#broj').textContent = E.length;
+  $('#tijelo').innerHTML = red.map(x => `<tr><td>${esc(new Date(x.datum).toLocaleDateString('hr-HR'))}</td><td class="mono">${esc(x.klasa)}</td><td class="mono">${esc(x.urbroj)}</td><td class="tekst">${esc(x.naziv)}</td><td>${esc(x.stranka)}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="napomena">Evidencija je prazna.</td></tr>';
+}
+const spremiE = () => lokalno.stavi(KLJUC, E);
+function sve() { popisPredmeta(); tablica(); prikazi(); }
+
+$('#dodijeli').onclick = () => {
+  const o = sljedeci();
+  if (!o) return;
+  const zapis = { ...o, naziv: $('#naziv').value.trim(), stranka: $('#stranka').value.trim() };
+  E.push(zapis); spremiE();
+  zadnjiDodijeljen = zapis;
+  $('#naziv').value = ''; $('#stranka').value = '';
+  sve();
+  const el = $('#pregled');
+  el.classList.add('novi');
+  el.innerHTML = `<small>Dodijeljeno i upisano u evidenciju</small>${esc(blok(zapis))}`;
+  kopiraj(blok(zapis), 'Broj je dodijeljen i kopiran.');
+};
+$('#kopiraj').onclick = () => { const o = zadnjiDodijeljen || sljedeci(); if (o) kopiraj(blok(o)); };
+$$('input[name="vrsta"]').forEach(r => r.addEventListener('change', () => { document.body.classList.toggle('postojeci', r.value === 'postojeci' && r.checked); zadnjiDodijeljen = null; prikazi(); }));
+document.addEventListener('input', e => {
+  const k = e.target.dataset?.p;
+  if (k) { P[k] = e.target.value; lokalno.stavi(KLJUC + '-postavke', P); }
+  if (e.target.id === 'trazi') return tablica();
+  if (e.target.closest('main')) { zadnjiDodijeljen = null; prikazi(); }
+});
+$('#zadanoPredlozak').onclick = () => { P.pKlasa = PRIMJER.pKlasa; P.pUrbroj = PRIMJER.pUrbroj; $('#pKlasa').value = P.pKlasa; $('#pUrbroj').value = P.pUrbroj; lokalno.stavi(KLJUC + '-postavke', P); prikazi(); };
+$('#ponisti').onclick = () => {
+  if (!E.length) return;
+  const z = E[E.length - 1];
+  if (!confirm(`Poništiti zadnji unos?\n\nKLASA: ${z.klasa}\nURBROJ: ${z.urbroj}`)) return;
+  E.pop(); spremiE(); zadnjiDodijeljen = null; sve();
+};
+$('#csv').onclick = () => {
+  const p = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = '﻿' + ['Datum;KLASA;URBROJ;Naziv;Pošiljatelj / primatelj', ...E.map(x => [new Date(x.datum).toLocaleDateString('hr-HR'), x.klasa, x.urbroj, x.naziv, x.stranka].map(p).join(';'))].join('\r\n');
+  spremi(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `evidencija-${danas()}.csv`);
+};
+$('#kopija').onclick = () => spremi(new Blob([JSON.stringify({ program: 'app-bonic KLASA i URBROJ', postavke: P, evidencija: E }, null, 2)], { type: 'application/json' }), `evidencija-kopija-${danas()}.json`);
+const ulaz = document.createElement('input');
+ulaz.type = 'file'; ulaz.accept = '.json,application/json';
+ulaz.onchange = async () => {
+  const f = ulaz.files[0]; ulaz.value = '';
+  if (!f) return;
+  try {
+    const o = JSON.parse(await f.text());
+    if (!Array.isArray(o.evidencija)) throw new Error();
+    if (E.length && !confirm(`Zamijeniti postojeću evidenciju (${E.length} unosa) onom iz datoteke (${o.evidencija.length} unosa)?`)) return;
+    E = o.evidencija.filter(x => x && x.klasa && x.urbroj);
+    if (o.postavke) { P = { ...P, ...o.postavke }; lokalno.stavi(KLJUC + '-postavke', P); $$('[data-p]').forEach(el => { el.value = P[el.dataset.p] ?? ''; }); }
+    spremiE(); sve(); obavijest('Evidencija je učitana.');
+  } catch { obavijest('Datoteka nije ispravna sigurnosna kopija.'); }
+};
+$('#vrati').onclick = () => ulaz.click();
+sve();
+</script>
+</body>
+</html>
